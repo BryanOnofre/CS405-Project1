@@ -6,32 +6,36 @@ public class PCB {
     int cpuIterator;
     ArrayList<Integer> cpuBurst;
     ArrayList<Integer> ioBurst;
+    int rrTimeLeft;
     int cpuBurstTimeLeft;
     int ioBurstTimeLeft;
-    int nextPointer;
-    boolean isDone;
-    boolean inCPU;
-    boolean inDisk;
-    boolean inIOWait;
 
     public PCB(int processId, int ioIterator, int cpuIterator, ArrayList<Integer> cpuBurst,
-               ArrayList<Integer> ioBurst, boolean isDone, boolean inCPU, boolean inDisk) {
+               ArrayList<Integer> ioBurst, int rrTimeLeft) {
         this.processId = processId;
         this.ioIterator = ioIterator;
         this.cpuIterator = cpuIterator;
         this.cpuBurst = cpuBurst;
         this.ioBurst = ioBurst;
-        this.isDone = isDone;
-        this.inCPU = inCPU;
-        this.inDisk = inDisk;
+        this.rrTimeLeft = rrTimeLeft;
     }
 
-    public boolean isInIOWait() {
-        return inIOWait;
+    public int getRrTimeLeft() {
+        return rrTimeLeft;
     }
 
-    public void setInIOWait(boolean inIOWait) {
-        this.inIOWait = inIOWait;
+    public void setRrTimeLeft(int rrTimeLeft) {
+        this.rrTimeLeft = rrTimeLeft;
+    }
+
+    public void increaseRRTimeLeft() {
+        int increasedRR = rrTimeLeft;
+        increasedRR++;
+        setRrTimeLeft(increasedRR);
+    }
+
+    public void resetRRtimeLeft() {
+        this.rrTimeLeft = 0;
     }
 
     public int getProcessId() {
@@ -90,53 +94,10 @@ public class PCB {
         this.ioBurstTimeLeft = ioBurstTimeLeft;
     }
 
-    public int getNextPointer() {
-        return nextPointer;
-    }
-
-    public void setNextPointer(int nextPointer) {
-        this.nextPointer = nextPointer;
-    }
-
-    public boolean isDone() {
-        return isDone;
-    }
-
-    public void setIsDone(boolean done) {
-        isDone = done;
-    }
-
-    public boolean isInCPU() {
-        return inCPU;
-    }
-
-    public void setInCPU(boolean inCPU) {
-        this.inCPU = inCPU;
-    }
-
-    public boolean isInDisk() {
-        return inDisk;
-    }
-
-    public void setInDisk(boolean inDisk) {
-        this.inDisk = inDisk;
-    }
-
     public String printProcessID() {
         return String.valueOf(processId);
     }
 
-    public void syncCPUBurstAtIteratortWithBurstTimeLeft() {
-        cpuBurstTimeLeft = cpuBurst.get(cpuIterator);
-    }
-
-    public void syncIOBurstAtIteratortWithBurstTimeLeft() {
-        ioBurstTimeLeft = ioBurst.get(cpuIterator);
-    }
-
-    public void deductFromIOIterator() {
-        ioBurstTimeLeft--;
-    }
 
     public int getShortestCPUBurst() {
         int shortestBurst = cpuBurst.get(0);
@@ -190,13 +151,9 @@ public class PCB {
                 ", cpuIterator=" + cpuIterator +
                 ", cpuBurst=" + cpuBurst +
                 ", ioBurst=" + ioBurst +
-//                ", cpuBurstTimeLeft=" + cpuBurstTimeLeft +
-//                ", ioBurstTimeLeft=" + ioBurstTimeLeft +
-//                ", nextPointer=" + nextPointer +
-//                ", isDone=" + isDone +
-//                ", inCPU=" + inCPU +
-//                ", inDisk=" + inDisk +
-//                ", inIOWait=" + inIOWait +
+                ", rrTimeLeft=" + rrTimeLeft +
+                ", cpuBurstTimeLeft=" + cpuBurstTimeLeft +
+                ", ioBurstTimeLeft=" + ioBurstTimeLeft +
                 '}';
     }
 

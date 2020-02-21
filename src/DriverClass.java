@@ -18,18 +18,20 @@ public class DriverClass {
         PCBqueue ioWait = new PCBqueue();
         PCBqueue cpu = new PCBqueue();
 
-        String testData = "jobs-testdata.txt";
-//        System.out.print("run test data in reverse? y/n : ");
-//        String yesNo = console.nextLine();
-//
-//        yesNo = "n"; // used to bypass for testing
-//
-//        if (yesNo.equalsIgnoreCase("n") ) {
-//            testData = "jobs-testdata.txt";
-//        } else {
-//            testData = "reverse-testdata.txt";
-//        }
+        //Print with fancyPrint
+        fancyPrint( " Welcome to Bryan's CPU scheduler !");
 
+        String testData = "";
+        System.out.print("\nrun test data in reverse? y/n : ");
+        String yesNo = console.nextLine();
+
+        if (yesNo.equalsIgnoreCase("n") ) {
+            testData = "jobs-testdata.txt";
+        } else {
+            testData = "reverse-testdata.txt";
+        }
+
+        //load test data from file into java
         try {
             FileInputStream fstream = new FileInputStream(testData);
             DataInputStream in = new DataInputStream(fstream);
@@ -38,7 +40,6 @@ public class DriverClass {
 
             //ints for use in initializing PCB objects
             int indexOfBurst = 1;
-            int iteratorInitialValue = 0;
 
             String strLine;
 
@@ -61,8 +62,8 @@ public class DriverClass {
                     }
                 }
 
-                PCB newPCB = new PCB(indexOfBurst, iteratorInitialValue, iteratorInitialValue, cpuBurstCreationArray,
-                        ioBurstCreationArray, false, false, false);
+                PCB newPCB = new PCB(indexOfBurst, 0, 0, cpuBurstCreationArray,
+                        ioBurstCreationArray, 0);
 
                 job.add(newPCB);
 
@@ -72,40 +73,39 @@ public class DriverClass {
             System.err.println("Error: " + e.getMessage());
         }
 
-        //initially populate ready queue
+        //initially populate ready queue for either scheduler
         for (int i = 0; i < 3; i++) {
-            ready.add(job.pullPCB_OutAtIndex(0));
+            ready.add(job.pullPCB_OutAtIndex(0)); //Add PCB from JOB to READY
         }
 
         //establish initial system time
         int systemTime = 0;
 
         //ask user if round robin or SJF
-//        System.out.print("Shortest job first or Round Robin? (s/r): ");
-//        String shortestOrRoundRobin = console.nextLine();
-
-        String shortestOrRoundRobin = "r"; //used to bypass for testing
+        System.out.print("Shortest job first or Round Robin? (s/r): ");
+        String shortestOrRoundRobin = console.nextLine();
 
         if (shortestOrRoundRobin.equalsIgnoreCase("s")) {
+
+            //welcome user to SJF
+            fancyPrint( "      Using SJF CPU Scheduling");
+
 
             //prepare for SJF
             //initially place PCB into CPU
             cpu.add(ready.pullOutPCBbyProcessId(ready.getIDofPCBwithSmallestCurrentBurst()));
 
+            //initial SystemPrint
+            SystemPrint(job, ready, disk, ioWait, cpu, systemTime);
 
             while (!cpu.isEmpty()) {
 
-                //if ioWait is NOT empty, Push from IOWait To CPU... FIRST
+                //if ioWait is NOT empty
                 if (!ioWait.isEmpty() && (ready.size() < 3) ) {
-                    ready.add(ioWait.pullPCB_OutAtIndex(0));
+                    ready.add(ioWait.pullPCB_OutAtIndex(0));    //Push from IOWait To CPU... FIRST
                 }
-                //if cpuBurst reaches zero. Increase iterator.
-                //If process is done. Kill it
-                //Else. push to disk for IO
-                //finally. If CPU is Empty
-                //If IO wait is NOT empty. Push from IOWait to READY
-                //if READY less than 3. pull from JOB
-                //if READY IS NOT empty && CPU IS empty. Pick SJF from ready queue
+
+                //if cpuBurst reaches zero
                 if (cpu.get(0).getCPUBurstAtIterator() == 0) {
 
                     //increase cpu iterator
@@ -113,76 +113,68 @@ public class DriverClass {
 
                     // if cpu iterator is greater than size of cpuBurst array. Done...  Kill Process
                     //else... push to disk for IO
-                    if (cpu.get(0).cpuBurst.size()-1 < cpu.get(0).cpuIterator) {
-                        cpu.kill(0);
+                    if (cpu.get(0).cpuIterator == cpu.get(0).cpuBurst.size()) {
+                        cpu.kill(0);    //kill PCB in CPU
                     } else {
-                        //push from CPU to DISK for IO
-                        disk.add(cpu.pullPCB_OutAtIndex(0));
+                        disk.add(cpu.pullPCB_OutAtIndex(0));        //push from CPU to DISK for IO
                     }
 
+                    // if READY size less than 3 && JOB is NOT empty
                     if( ready.size() < 3 && !job.isEmpty()){
-                        ready.add( job.pullPCB_OutAtIndex(0));
+                        ready.add( job.pullPCB_OutAtIndex(0));      //push from JOB to READY
                     }
 
-                    //if cpu is empty.
-                    if (cpu.isEmpty()) {
-                        if (!ready.isEmpty()) {
+                    //if cpu is empty && ready is NOT empty.
+                    //place shortest job in ready queue into CPU
+                    if ( cpu.isEmpty() && !ready.isEmpty() ) {
                             cpu.add(ready.pullOutPCBbyProcessId(ready.getIDofPCBwithSmallestCurrentBurst()));
-                        }
                     }
+                    SystemPrint(job, ready, disk, ioWait, cpu, systemTime);     // Print Id's
                 }
-                // SystemPrint
-                SystemPrint(job, ready, disk, ioWait, cpu, systemTime);
 
 
                 //if Disk not empty
                 if (!disk.isEmpty()) {
-                    //deduct from IOburst at iterator
 
+                    //deduct from IOburst at iterator for each PCB in DISK
                     for (int i = 0; i < disk.size(); i++) {
-                        disk.get(i).deductFromIOBurstAtIterator();
 
-                        //If IOBurst finished at iterator. Done with IO. Push to IOWAit
+                        disk.get(i).deductFromIOBurstAtIterator();      //deduct from IOburst at iterator
+
+                        //If IOBurst finished at iterator. Increase IO iterator. Push to IOWAit
                         if (disk.get(i).getIOBurstAtIterator() == 0) {
-                            //incrase IO iterator
-                            disk.get(i).increaseIteratorIO();
-                            //push to IOwait queue
-                            ioWait.add(disk.pullPCB_OutAtIndex(i));
+                            disk.get(i).increaseIteratorIO();       //incrase IO iterator
+                            ioWait.add(disk.pullPCB_OutAtIndex(i));     //push to IOwait queue
                         }
                     }
                 }
 
-                //deduct one from CPU burst at iterator
+                //if CPU is NOT empty
                 if (!cpu.isEmpty()) {
-                    cpu.get(0).deductFromCPUBurstAtIterator();
+                    cpu.get(0).deductFromCPUBurstAtIterator();      //deduct one from CPU burst at iterator
                 }
-                //increase system time by one
-                systemTime++;
+                systemTime++;       //increase system time by one
             }
 
-            System.out.println( "execution finished. \n\n");
+            //print execution finished with fancy stars
+            fancyPrint("        execution finished");
 
         } else if ( shortestOrRoundRobin.equalsIgnoreCase("r" )) {
-            //Do something else
-//            System.out.print("Enter time quantum: ");
-            int timeQuantum = 2;
-//                    console.nextInt();
-
 
             //prepare for RR
+            fancyPrint( "  Using Round Robin CPU Scheduling");      //welcome user to Round Robin
+            System.out.print("\nEnter time quantum: ");     // ask user to enter time quantum
+            int timeQuantum = console.nextInt();
+
             //initially place PCB into CPU
             cpu.add(ready.pullPCB_OutAtIndex(0));
 
+            //initially print Id's
+            SystemPrint( job, ready, disk, ioWait, cpu, systemTime);
 
             while (!cpu.isEmpty()) {
 
-                //if cpuBurst reaches zero. Increase iterator.
-                //If process is done. Kill it
-                //Else. push to disk for IO
-                //finally. If CPU is Empty
-                //If IO wait is NOT empty. Push from IOWait to READY
-                //if READY less than 3. pull from JOB
-                //if READY IS NOT empty && CPU IS empty. Pick SJF from ready queue
+                //if cpuBurst reaches zero
                 if (cpu.get(0).getCPUBurstAtIterator() == 0) {
 
                     //increase cpu iterator
@@ -190,56 +182,51 @@ public class DriverClass {
 
                     // if cpu iterator is greater than size of cpuBurst array. Done...  Kill Process
                     //else... push to disk for IO
-                    if (cpu.get(0).cpuBurst.size()-1 < cpu.get(0).cpuIterator) {
-                        cpu.kill(0);
+                    if (cpu.get(0).cpuIterator >= cpu.get(0).cpuBurst.size()) {
+                        cpu.kill(0);        //kill process in CPU
                     } else {
-                        //push from CPU to DISK for IO
-                        disk.add(cpu.pullPCB_OutAtIndex(0));
+                        disk.add(cpu.pullPCB_OutAtIndex(0));        //push from CPU to DISK for i/o
+
                     }
 
-                    //if cpu is empty.
-                    if (cpu.isEmpty()) {
-                        if (!ready.isEmpty()) {
-                            cpu.add(ready.pullPCB_OutAtIndex(0));
-                        }
+                    //if ioWait is NOT empty,
+                    if (!ioWait.isEmpty() && (ready.size() <= 2) ) {
+                        ready.add(ioWait.pullPCB_OutAtIndex(0));        //Push from IOWait To CPU... FIRST
                     }
 
-                    //if ioWait is NOT empty, Push from IOWait To CPU... FIRST
-                    if (!ioWait.isEmpty() && (ready.size() < 3) ) {
-                        ready.add(ioWait.pullPCB_OutAtIndex(0));
+                    // if READY sie is < 2 && JOB is NOT empty
+                    if( ready.size() <= 2 && !job.isEmpty()){
+                        ready.add( job.pullPCB_OutAtIndex(0));      //push from JOB to READY
                     }
 
-
-
-                    //testing commenting this out
-                    if( ready.size() < 2 && !job.isEmpty()){
-                        ready.add( job.pullPCB_OutAtIndex(0));
+                    //if cpu is empty && READY is NOT empty
+                    if (cpu.isEmpty() && !ready.isEmpty()) {
+                            cpu.add(ready.pullPCB_OutAtIndex(0));       //push from CPU to READY
+                            cpu.get(0).resetRRtimeLeft();       //reset RRtimeLeft
+                            SystemPrint( job, ready, disk, ioWait, cpu, systemTime);        //print Id's
                     }
-
                 }
-                // if cpu.get burst at iterator zero above true. Dont check this anymore... ELSE IF?
-                else if ( systemTime % timeQuantum == 0 && systemTime != 0) {
-                    //prempt current process
-                    //push from CPU to READY
-                    ready.add(cpu.pullPCB_OutAtIndex(0));
+                // Else if PCB in CPU timeLeft over && systemTime != 0.     prempt current process
+                else if ( (cpu.get(0).getRrTimeLeft() % timeQuantum == 0) && (systemTime != 0) ) {
+                    ready.add(cpu.pullPCB_OutAtIndex(0));       //push from CPU to READY
 
-//                    if( ready.size() < 3 && job.isEmpty() == false ){
-//                        ready.add( job.pullPCB_OutAtIndex(0));
-//                    }
-
-                    //if cpu is empty.
-                    if (cpu.isEmpty()) {
-                        if (!ready.isEmpty()) {
-                            cpu.add(ready.pullPCB_OutAtIndex(0));
-                        }
+                    //if ioWait is NOT empty && READY size < 2
+                    if (!ioWait.isEmpty() && (ready.size() <= 2) ) {
+                        ready.add(ioWait.pullPCB_OutAtIndex(0));        //Push from IOWait To CPU... FIRST
                     }
 
+                    // if READY size is < 2 && JOB is NOT empty
+                    if( ready.size() <= 2 && !job.isEmpty()){
+                        ready.add( job.pullPCB_OutAtIndex(0));      //push to READY from JOB
+                    }
 
+                    //if cpu is empty. && ready is NOT empty.
+                    if (cpu.isEmpty() && !ready.isEmpty()) {
+                        cpu.add(ready.pullPCB_OutAtIndex(0));       //Push to CPU from READY
+                        cpu.get(0).resetRRtimeLeft();       //Reset RRtimeLeft for new PCB
+                        SystemPrint(job, ready, disk, ioWait, cpu, systemTime);     //Print Id's of PCB's in queues
+                    }
                 }
-
-                // SystemPrint
-                SystemPrint(job, ready, disk, ioWait, cpu, systemTime);
-
 
                 //if Disk not empty
                 if (!disk.isEmpty()) {
@@ -249,7 +236,7 @@ public class DriverClass {
 
                         //If IOBurst finished at iterator. Done with IO. Increase IOiterator. Push to IOWAit
                         if (disk.get(i).getIOBurstAtIterator() == 0) {
-                            //incrase IO iterator
+                            //increase IO iterator
                             disk.get(i).increaseIteratorIO();
                             //push to IOwait queue
                             ioWait.add(disk.pullPCB_OutAtIndex(i));
@@ -257,23 +244,34 @@ public class DriverClass {
                     }
                 }
 
-                //deduct one from CPU burst at iterator
+                //if CPU is NOT empty
                 if (!cpu.isEmpty()) {
-                    cpu.get(0).deductFromCPUBurstAtIterator();
+                    cpu.get(0).increaseRRTimeLeft();        ////increase RRtimeLeft
+                    cpu.get(0).deductFromCPUBurstAtIterator();      //deduct one from CPU burst at iterator
                 }
-                //increase system time by one
-                systemTime++;
+
+                systemTime++;       //increase system time
             }
 
-            System.out.println( "execution finished. \n\n");
-
+            fancyPrint("        execution finished");      //print execution finished with fancy stars
         }
     }
 
-    public static void SystemPrint(PCBqueue job, PCBqueue ready, PCBqueue disk, PCBqueue ioWait, PCBqueue cpu, int systemTime) {
-        System.out.println("Timer = " + systemTime + "\n    CPU:     " + cpu.printIdList() + "\n    JOB:     "
+    //Prints line sandwiched between stars to look fancy
+    public static void fancyPrint ( String line ) {
+
+        System.out.printf(  "\n" +
+                            "********************************************\n" +
+                            "    %s\n" +
+                            "********************************************\n", line);
+    }
+
+    //prints SystemTime and the Id's of PCBs in queues given to it
+    public static void SystemPrint(PCBqueue job, PCBqueue ready, PCBqueue disk, PCBqueue ioWait,
+                                   PCBqueue cpu, int systemTime) {
+        System.out.println("\nTimer = " + systemTime + "\n    CPU:     " + cpu.printIdList() + "\n    JOB:     "
                 + job.printIdList() + "\n    READY:   " + ready.printIdList() + "\n    DISK:    "
-                + disk.printIdList() + "\n    IOWait:  " + ioWait.printIdList() + "\n\n");
+                + disk.printIdList() + "\n    IOWait:  " + ioWait.printIdList() );
     }
 }
 

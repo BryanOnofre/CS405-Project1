@@ -11,6 +11,7 @@ public class PCBqueue  {
         queue.add( pcb );
     }
 
+    //kill PCB at index
     public void kill ( int indexToKill ) {
         queue.remove( indexToKill );
     }
@@ -27,11 +28,11 @@ public class PCBqueue  {
         return queue.get(index);
     }
 
-
     public PCB pullPCB_OutAtIndex ( int index ) {
         return queue.remove(index);
     }
 
+    //return PCB object. given its process ID
     public PCB pullOutPCBbyProcessId ( int processId) {
         PCB returningPCB = null;
         for (int i = 0; i < queue.size(); i++) {
@@ -42,6 +43,7 @@ public class PCBqueue  {
         return returningPCB;
     }
 
+    //return ID of PCB with smallest burst at iterator in queue
     public int getIDofPCBwithSmallestCurrentBurst() {
         int shortestBurst = queue.get(0).getCPUBurstAtIterator();
         int returningPCBid = 0;
@@ -57,6 +59,7 @@ public class PCBqueue  {
         return returningPCBid;
     }
 
+    //print ID of every PCB in queue
     public String printIdList () {
         String printedIdList = "";
         for (int i = 0; i < queue.size(); i++) {
